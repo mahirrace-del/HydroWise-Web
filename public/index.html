@@ -125,12 +125,14 @@
           <div class="metric-value compact" id="arm-state">Standby</div>
           <p id="arm-link-detail">Cloud Firebase · TX2 &rarr; Uno RX0</p>
           <div style="display:flex; flex-direction:column; gap:6px; margin-top:12px;">
-            <button class="button primary block" id="btn-demo-home" type="button"><i data-lucide="home"></i>Home all axes (h)</button>
+            <button class="button primary block" id="btn-demo-loop" type="button"><i data-lucide="repeat"></i>Start Seeding Loop (DEMO)</button>
+            <button class="button secondary block" id="btn-vision-seed-loop" type="button"><i data-lucide="scan-eye"></i>Vision Tray Loop (HuskyLens)</button>
+            <button class="button secondary block" id="btn-demo-home" type="button"><i data-lucide="home"></i>Home all axes (h)</button>
             <button class="button secondary block" id="btn-demo-inspect" type="button"><i data-lucide="scan"></i>Vision pose</button>
             <button class="button secondary block" id="btn-demo-seed" type="button"><i data-lucide="play"></i>Preset +500 (1)</button>
             <button class="button secondary block" id="btn-demo-drop-seed" type="button"><i data-lucide="rotate-ccw"></i>Reverse -500 (-1)</button>
             <button class="button secondary block" id="btn-demo-harvest" type="button"><i data-lucide="minimize-2"></i>Travel pose</button>
-            <button class="button secondary block" id="btn-demo-claw" type="button"><i data-lucide="square"></i>Stop Uno motors</button>
+            <button class="button danger block" id="btn-demo-claw" type="button"><i data-lucide="square"></i>Stop Loop / Uno Motors</button>
           </div>
         </article>
 
@@ -238,10 +240,12 @@
         <div class="fluidics-grid">
           <div class="relay-card">
             <div class="relay-card-top">
-              <div class="relay-card-name">Detected target<small id="husky-algo-label">Tag Recognition (ID 16)</small></div>
+              <div class="relay-card-name">Plant condition<small id="husky-algo-label">Tag Recognition (ID 16)</small></div>
               <span class="relay-status" id="husky-target-val">None</span>
             </div>
-            <p id="husky-coords-val" style="margin:8px 0 0; font-size:12px; color:var(--ink-muted);">x=-- y=-- · dX=-- px</p>
+            <p id="husky-condition-val" style="margin:6px 0 0; font-size:12px; font-weight:600; color:var(--primary-dark);">Condition: Waiting for scan…</p>
+            <p id="husky-coords-val" style="margin:4px 0 0; font-size:12px; color:var(--ink-muted);">x=-- y=-- · dX=-- px</p>
+            <p id="vision-loop-phase" style="margin:4px 0 0; font-size:11px; color:var(--ink-muted);">Vision Loop: Idle</p>
           </div>
 
           <div class="relay-card">
@@ -250,18 +254,20 @@
               <span class="relay-status" id="husky-track-badge">Idle</span>
             </div>
             <div style="display:flex; gap:6px; margin-top:8px;">
-              <input class="text-input" id="husky-ip-input" placeholder="e.g. 192.168.1.105" style="margin:0; padding:8px 10px;" />
+              <input class="text-input" id="husky-ip-input" placeholder="e.g. 192.168.0.xxx" style="margin:0; padding:8px 10px;" />
               <button class="button primary compact" id="btn-set-husky-ip" type="button">Connect</button>
             </div>
           </div>
 
           <div class="relay-card">
             <div class="relay-card-top">
-              <div class="relay-card-name">Rail auto-align<small>Centers camera dX &rarr; 0 px</small></div>
+              <div class="relay-card-name">Mode &amp; vision loop<small>Plant check &rarr; Auto-seed empty tray</small></div>
             </div>
             <div style="display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;">
               <button class="button primary compact" id="btn-husky-align" type="button"><i data-lucide="crosshair"></i>Align rail</button>
-              <button class="button secondary compact" id="btn-husky-stop-track" type="button"><i data-lucide="square"></i>Stop track</button>
+              <button class="button secondary compact" id="btn-husky-stop-track" type="button"><i data-lucide="square"></i>Stop vision</button>
+              <button class="button secondary compact" id="btn-husky-algo-self" type="button">Self-Learn</button>
+              <button class="button secondary compact" id="btn-husky-algo-color" type="button">Color</button>
               <button class="button secondary compact" id="btn-husky-algo-tag" type="button">Tag</button>
               <button class="button secondary compact" id="btn-husky-algo-obj" type="button">Object</button>
             </div>
@@ -315,6 +321,17 @@
             <button class="button secondary compact" id="btn-manual-preset-1" type="button">+500 (1)</button>
             <button class="button secondary compact" id="btn-manual-preset-neg1" type="button">-500 (-1)</button>
             <button class="button secondary compact" id="btn-manual-home" type="button"><i data-lucide="home"></i>Home (h)</button>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; padding:10px 16px; border-top:1px solid var(--glass-border);">
+            <span style="font-size:12px; font-weight:600; color:var(--ink-muted); margin-right:4px;">Teach Tray Loop:</span>
+            <button class="button secondary compact" id="btn-teach-zero" type="button">Zero Here</button>
+            <button class="button secondary compact" id="btn-teach-hopper" type="button">Save Hopper</button>
+            <button class="button secondary compact" id="btn-teach-left" type="button">Save Left Tray</button>
+            <button class="button secondary compact" id="btn-teach-right" type="button">Save Right Tray</button>
+            <button class="button secondary compact" id="btn-teach-close" type="button">Save Grip Close</button>
+            <button class="button secondary compact" id="btn-teach-open" type="button">Save Grip Open</button>
+            <button class="button primary compact" id="btn-teach-demo" type="button"><i data-lucide="repeat"></i>Start Loop</button>
+            <button class="button danger compact" id="btn-teach-stop" type="button"><i data-lucide="square"></i>Stop</button>
           </div>
           <div class="motion-footer">
             <span><i data-lucide="radio"></i>Confirmed position from IR sensors only</span>

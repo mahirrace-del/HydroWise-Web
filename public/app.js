@@ -224,6 +224,7 @@ function initFirebaseListeners() {
           tray.soilStatus = data[tray.id].soil_status;
         }
         tray.health = data[tray.id].health || "N/A";
+        tray.visionState = data[tray.id].vision_state || "";
         tray.harvestReady = Boolean(data[tray.id].harvest_ready);
         if (data[tray.id].valve_state) {
           tray.valve = data[tray.id].valve_state === "OPEN" ? "Open" : "Closed";
@@ -290,7 +291,11 @@ function initFirebaseListeners() {
       armDetailEl.textContent = `Wi-Fi: ${cfg.wifi_ssid || "--"} · ${cfg.esp_ip || "--"}${rssiTxt}${upTxt}`;
     }
     if (trackBadgeEl) {
-      trackBadgeEl.textContent = cfg.vision_tracking ? "ALIGNING" : "Idle";
+      trackBadgeEl.textContent = cfg.vision_seed_loop ? "VISION LOOP" : (cfg.vision_tracking ? "ALIGNING" : "Idle");
+    }
+    const loopPhaseEl = document.getElementById("vision-loop-phase");
+    if (loopPhaseEl && cfg.vision_loop_phase) {
+      loopPhaseEl.textContent = `Vision Loop: ${cfg.vision_loop_phase}`;
     }
     if (huskyIpInput && cfg.husky_ip && !huskyIpInput.value) {
       huskyIpInput.value = cfg.husky_ip;
@@ -305,6 +310,7 @@ function initFirebaseListeners() {
     if (!vis) return;
     const badgeEl = document.getElementById("husky-conn-badge");
     const targetEl = document.getElementById("husky-target-val");
+    const condEl = document.getElementById("husky-condition-val");
     const coordsEl = document.getElementById("husky-coords-val");
     const algoEl = document.getElementById("husky-algo-label");
     const rtspEl = document.getElementById("husky-rtsp-url");
@@ -312,6 +318,11 @@ function initFirebaseListeners() {
     const algoNames = { 1: "Face Recognition", 2: "Object Recognition", 4: "Color Recognition", 6: "Self-Learning", 16: "Tag Recognition", 18: "QR Code" };
     if (badgeEl) {
       badgeEl.innerHTML = `<span class="status-dot ${vis.connected ? "online" : "offline"}"></span>${vis.connected ? "Connected (MQTT)" : "Offline"}`;
+    }
+    if (condEl) {
+      const condText = vis.plant_condition || (vis.detected ? (vis.name || `Class #${vis.tag_id}`) : "Empty / No Plant");
+      condEl.textContent = `Condition: ${condText}`;
+      condEl.style.color = condText.startsWith("Alert") ? "var(--danger, #dc2626)" : "var(--primary-dark)";
     }
     if (targetEl) {
       if (vis.detected) {
@@ -592,7 +603,7 @@ function renderTrays() {
             <div class="tray-stat"><span>Soil sensor (Pin ${tray.soilPin || 'N/A'})</span><strong>${tray.moisture !== null ? tray.moisture + '<small>%</small> · ' + (tray.soilStatus || (tray.moisture > 50 ? "Optimal" : "Dry")) : 'None'}</strong></div>
             <div class="tray-stat"><span>Valve (Pin ${tray.gpio || 'N/A'})</span><strong style="color:${tray.valve === 'Open' ? 'var(--primary)' : ''}">${tray.valve}</strong></div>
             <div class="tray-stat"><span>Growth days</span><strong>${tray.growthDays}</strong></div>
-            <div class="tray-stat"><span>Last cycle</span><strong>${tray.lastCycle}</strong></div>
+            <div class="tray-stat"><span>Vision status</span><strong>${tray.visionState || tray.lastCycle}</strong></div>
           </div>
           <div class="meter"><span style="width:${tray.moisture !== null ? tray.moisture : 0}%"></span></div>
           <div class="tray-actions">
@@ -970,6 +981,12 @@ function bindEvents() {
   const btnConnectUsb = document.getElementById("btn-connect-usb");
   if (btnConnectUsb) btnConnectUsb.addEventListener("click", connectUSB);
 
+  const btnDemoLoop = document.getElementById("btn-demo-loop");
+  if (btnDemoLoop) btnDemoLoop.addEventListener("click", () => sendArmButtonCommand("DEMO", "ROUTINE"));
+
+  const btnVisionSeedLoop = document.getElementById("btn-vision-seed-loop");
+  if (btnVisionSeedLoop) btnVisionSeedLoop.addEventListener("click", () => sendArmButtonCommand("VISION_SEED_LOOP", "VISION_SEED_LOOP"));
+
   const btnDemoHome = document.getElementById("btn-demo-home");
   if (btnDemoHome) btnDemoHome.addEventListener("click", () => sendArmButtonCommand("HOME_ARM"));
 
@@ -1008,6 +1025,21 @@ function bindEvents() {
   const btnManualHome = document.getElementById("btn-manual-home");
   if (btnManualHome) btnManualHome.addEventListener("click", () => sendArmButtonCommand("HOME_ARM"));
 
+  const teachBindings = [
+    ["btn-teach-zero", "ZERO", "RAW"],
+    ["btn-teach-hopper", "G901", "RAW"],
+    ["btn-teach-left", "G902", "RAW"],
+    ["btn-teach-right", "G903", "RAW"],
+    ["btn-teach-close", "G904", "RAW"],
+    ["btn-teach-open", "G905", "RAW"],
+    ["btn-teach-demo", "DEMO", "ROUTINE"],
+    ["btn-teach-stop", "STOP", "ROUTINE"]
+  ];
+  teachBindings.forEach(([id, cmd, type]) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("click", () => sendArmButtonCommand(cmd, type));
+  });
+
   // HuskyLens 2 Wi-Fi MQTT & Stream controls
   const btnSetHuskyIp = document.getElementById("btn-set-husky-ip");
   if (btnSetHuskyIp) {
@@ -1022,6 +1054,10 @@ function bindEvents() {
   if (btnHuskyAlign) btnHuskyAlign.addEventListener("click", () => sendArmButtonCommand("ALIGN_TAG"));
   const btnHuskyStop = document.getElementById("btn-husky-stop-track");
   if (btnHuskyStop) btnHuskyStop.addEventListener("click", () => sendArmButtonCommand("VISION_STOP"));
+  const btnAlgoSelf = document.getElementById("btn-husky-algo-self");
+  if (btnAlgoSelf) btnAlgoSelf.addEventListener("click", () => sendArmButtonCommand("HUSKY_ALGO", "HUSKY_ALGO", "6"));
+  const btnAlgoColor = document.getElementById("btn-husky-algo-color");
+  if (btnAlgoColor) btnAlgoColor.addEventListener("click", () => sendArmButtonCommand("HUSKY_ALGO", "HUSKY_ALGO", "4"));
   const btnAlgoTag = document.getElementById("btn-husky-algo-tag");
   if (btnAlgoTag) btnAlgoTag.addEventListener("click", () => sendArmButtonCommand("HUSKY_ALGO", "HUSKY_ALGO", "16"));
   const btnAlgoObj = document.getElementById("btn-husky-algo-obj");
