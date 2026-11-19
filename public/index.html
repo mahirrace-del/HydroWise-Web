@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="HydroHelp — Modular Autonomous Hydroponic Farming Robot Control Center. WICE 2026, Team Robo Innovator, Bangladesh." />
+  <title>HydroHelp Control Center — Robo Innovator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ========== SIDEBAR ========== -->
+  <aside class="sidebar" aria-label="Primary navigation">
+    <a class="brand" href="#overview" aria-label="HydroHelp home">
+      <span class="brand-mark" aria-hidden="true"><i data-lucide="sprout"></i></span>
+      <span>Hydro<span>Help</span></span>
+    </a>
+
+    <div class="workspace-label">Operations</div>
+    <nav class="nav-list">
+      <button class="nav-item active" data-view="overview"   type="button"><i data-lucide="layout-dashboard"></i>Overview</button>
+      <button class="nav-item"        data-view="manual"     type="button"><i data-lucide="sliders-horizontal"></i>Manual control</button>
+      <button class="nav-item"        data-view="routines"   type="button"><i data-lucide="list-video"></i>Motion routines</button>
+      <button class="nav-item"        data-view="trays"      type="button"><i data-lucide="grid-2x2"></i>Grow trays</button>
+      <button class="nav-item"        data-view="activity"   type="button"><i data-lucide="scroll-text"></i>Activity log</button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="connection-card">
+        <div class="connection-heading"><span class="status-dot online"></span>Firebase bridge</div>
+        <span id="firebase-status">Connecting…</span>
+        <button class="text-action" id="open-connection" type="button">Configure</button>
+      </div>
+      <div class="connection-card" style="margin-top: 12px; border-color: rgba(56,189,248,0.3);">
+        <div class="connection-heading"><span class="status-dot offline" id="usb-status-dot"></span>Direct USB Control</div>
+        <span id="usb-status">Disconnected</span>
+        <button class="text-action" id="btn-connect-usb" type="button" style="color: var(--primary);">Connect USB Robot</button>
+      </div>
+      <div class="operator-row">
+        <span class="avatar">RI</span>
+        <span>
+          <strong>Robo Innovator</strong>
+          <small>Bangladesh · WICE 2026</small>
+        </span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========== MAIN CONTENT ========== -->
+  <main class="main-content">
+
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Robo Innovator / Live Operations</p>
+        <h1 id="page-title">System overview</h1>
+      </div>
+      <div class="topbar-actions">
+        <div class="clock">
+          <i data-lucide="clock-3"></i>
+          <span id="live-clock">--:--:--</span>
+        </div>
+        <button class="icon-button" id="open-alerts" type="button" aria-label="View alerts" data-tooltip="Alerts">
+          <i data-lucide="bell"></i>
+          <span class="alert-count">1</span>
+        </button>
+        <button class="button danger" id="emergency-stop" type="button">
+          <i data-lucide="octagon-x"></i>Emergency stop
+        </button>
+      </div>
+    </header>
+
+    <!-- ======================================================
+         VIEW: OVERVIEW
+         ====================================================== -->
+    <section class="view active" id="overview-view" aria-labelledby="page-title">
+
+      <!-- Hero Banner -->
+      <div class="hero-banner">
+        <div>
+          <p class="eyebrow">WICE 2026 · Team Robo Innovator · Bangladesh</p>
+          <h2 class="hero-title"><span>HydroHelp</span> — Modular Autonomous Hydroponic Robot</h2>
+        </div>
+        <div class="hero-badge">
+          <span class="live-badge"><span class="status-dot online"></span>System live</span>
+          <p class="system-status-msg" id="system-status-msg">Manual Control Mode.</p>
+        </div>
+      </div>
+
+      <!-- Metrics Grid -->
+      <section class="metrics-grid" aria-label="System metrics">
+        <article class="metric-card">
+          <div class="metric-label"><i data-lucide="droplets"></i>Nutrient reservoir</div>
+          <div class="metric-value"><span id="reservoir-value">71</span><small>%</small></div>
+          <div class="meter"><span id="reservoir-meter" style="width:71%"></span></div>
+          <p>14.2 L available · Concept</p>
+        </article>
+
+        <article class="metric-card">
+          <div class="metric-label"><i data-lucide="activity"></i>Water pump</div>
+          <div class="metric-value compact" id="pump-state">Idle</div>
+          <p id="pump-detail">Main Pump (Pin D6) · Relays ready</p>
+          <div class="pump-actions-row">
+            <button class="button primary compact" id="toggle-pump" type="button">
+              <i data-lucide="power"></i><span id="toggle-pump-label">Start Pump</span>
+            </button>
+            <button class="button secondary compact" id="btn-quick-all-off" type="button">
+              <i data-lucide="square"></i>All Off
+            </button>
+          </div>
+        </article>
+
+        <article class="metric-card">
+          <div class="metric-label"><i data-lucide="thermometer"></i>Ambient climate</div>
+          <div class="metric-value compact" id="ambient-climate-val">--°C · --% Hum</div>
+          <p id="ambient-climate-detail">Base ESP8266 · DHT11 Live</p>
+        </article>
+
+        <article class="metric-card" style="grid-column: span 1; grid-row: span 2;">
+          <div class="metric-label"><i data-lucide="bot"></i>Arm ESP32 & Uno</div>
+          <div class="metric-value compact" id="arm-state">Standby</div>
+          <p id="arm-link-detail">Cloud Firebase · TX2 &rarr; Uno RX0</p>
+          <div style="display:flex; flex-direction:column; gap:6px; margin-top:12px;">
+            <button class="button primary block" id="btn-demo-home" type="button"><i data-lucide="home"></i>Home all axes (h)</button>
+            <button class="button secondary block" id="btn-demo-inspect" type="button"><i data-lucide="scan"></i>Vision pose</button>
+            <button class="button secondary block" id="btn-demo-seed" type="button"><i data-lucide="play"></i>Preset +500 (1)</button>
+            <button class="button secondary block" id="btn-demo-drop-seed" type="button"><i data-lucide="rotate-ccw"></i>Reverse -500 (-1)</button>
+            <button class="button secondary block" id="btn-demo-harvest" type="button"><i data-lucide="minimize-2"></i>Travel pose</button>
+            <button class="button secondary block" id="btn-demo-claw" type="button"><i data-lucide="square"></i>Stop Uno motors</button>
+          </div>
+        </article>
+
+      </section>
+
+      <!-- System Map + Health -->
+      <section class="workspace-grid">
+
+        <!-- Rail & Tray Map -->
+        <article class="panel system-map-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Physical layout</p>
+              <h2>Two-unit central rail</h2>
+            </div>
+            <span class="chip success"><span class="status-dot online"></span>Position confirmed</span>
+          </div>
+
+          <div class="system-map" aria-label="HydroHelp rail, arm, sensors and tray layout">
+            <div class="map-legend">
+              <span><i class="legend-square rail"></i>Rail path</span>
+              <span><i class="legend-square sensor"></i>IR sensor</span>
+              <span><i class="legend-square arm"></i>SCARA carriage</span>
+            </div>
+
+            <div class="module-map">
+              <!-- Unit 1 Left -->
+              <button class="tray-map left-bay" data-tray="unit1_left" type="button">
+                <span>Unit 1 · Left bay</span>
+                <strong id="map-crop-unit1_left">Pak choi</strong>
+                <small><i class="mini-drop"></i><b id="map-moisture-unit1_left">--%</b> moisture</small>
+              </button>
+
+              <!-- Rail Spine -->
+              <div class="rail-spine" aria-label="Central linear rail">
+                <span class="rail-track"></span>
+                <span class="carriage" id="map-carriage"><i data-lucide="bot"></i></span>
+                <button class="sensor-marker active" data-sensor="start" type="button">Start<small>Unit 1 Home</small></button>
+                <button class="sensor-marker" data-sensor="middle" type="button">Mid<small>Unit link</small></button>
+                <button class="sensor-marker" data-sensor="end" type="button">End<small>Rail limit</small></button>
+              </div>
+
+              <!-- Unit 1 Right (Home/Dock) -->
+              <button class="tray-map right-bay" data-tray="unit1_right" type="button" style="border: 1px solid rgba(56,189,248,0.3); background: rgba(56,189,248,0.05);">
+                <span>Unit 1 · Right bay</span>
+                <strong id="map-crop-unit1_right">Home Station</strong>
+                <small><i data-lucide="home" style="width:10px;height:10px;"></i>Robot Dock</small>
+              </button>
+
+              <!-- Unit 2 Left -->
+              <button class="tray-map left-bay" data-tray="unit2_left" type="button">
+                <span>Unit 2 · Left bay</span>
+                <strong id="map-crop-unit2_left">Lettuce</strong>
+                <small><i class="mini-drop"></i><b id="map-moisture-unit2_left">--%</b> moisture</small>
+              </button>
+
+              <!-- Unit 2 Right -->
+              <button class="tray-map right-bay empty-bay" data-tray="unit2_right" type="button" style="grid-column: 4 / 5; margin-top: 10px;">
+                <span>Unit 2 · Right bay</span>
+                <strong id="map-crop-unit2_right">Unassigned</strong>
+                <small><i class="mini-drop"></i><b id="map-moisture-unit2_right">--%</b> moisture</small>
+              </button>
+            </div>
+          </div>
+
+          <div class="map-footer">
+            <span><i data-lucide="radio"></i>IR checkpoint: <strong id="checkpoint-text">Start / home</strong></span>
+            <span><i data-lucide="move-horizontal"></i>Last rail cmd: <strong id="rail-position">None</strong></span>
+            <button class="text-action" data-open-view="trays" type="button">View tray details</button>
+          </div>
+        </article>
+
+        <!-- Live Readings -->
+        <aside class="panel health-panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Hydroponic health</p>
+              <h2>Live readings</h2>
+            </div>
+            <button class="icon-button" id="refresh-readings" type="button" aria-label="Refresh readings" data-tooltip="Refresh">
+              <i data-lucide="refresh-cw"></i>
+            </button>
+          </div>
+          <div class="reading-list">
+            <div class="reading"><span>Reservoir pH</span><strong id="ph-value">6.1</strong><em class="good">5.8–6.4</em></div>
+            <div class="reading"><span>Water temp.</span><strong id="temp-value">23.7°</strong><em class="good">19–24°C</em></div>
+          </div>
+          <div class="health-note">
+            <i data-lucide="circle-check"></i>
+            <span>Sensors nominal.</span>
+          </div>
+        </aside>
+      </section>
+
+      <!-- HuskyLens 2 Wi-Fi Vision & Direct Cloud Command -->
+      <section class="panel" style="margin-top: 16px;">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">HuskyLens 2 · Wi-Fi MQTT</p>
+            <h2>Vision tracking & live stream</h2>
+          </div>
+          <span class="chip" id="husky-conn-badge"><span class="status-dot offline" id="husky-dot"></span>Offline</span>
+        </div>
+
+        <div class="fluidics-grid">
+          <div class="relay-card">
+            <div class="relay-card-top">
+              <div class="relay-card-name">Detected target<small id="husky-algo-label">Tag Recognition (ID 16)</small></div>
+              <span class="relay-status" id="husky-target-val">None</span>
+            </div>
+            <p id="husky-coords-val" style="margin:8px 0 0; font-size:12px; color:var(--ink-muted);">x=-- y=-- · dX=-- px</p>
+          </div>
+
+          <div class="relay-card">
+            <div class="relay-card-top">
+              <div class="relay-card-name">HuskyLens 2 IP<small>MQTT port 1883 · Same Wi-Fi</small></div>
+              <span class="relay-status" id="husky-track-badge">Idle</span>
+            </div>
+            <div style="display:flex; gap:6px; margin-top:8px;">
+              <input class="text-input" id="husky-ip-input" placeholder="e.g. 192.168.1.105" style="margin:0; padding:8px 10px;" />
+              <button class="button primary compact" id="btn-set-husky-ip" type="button">Connect</button>
+            </div>
+          </div>
+
+          <div class="relay-card">
+            <div class="relay-card-top">
+              <div class="relay-card-name">Rail auto-align<small>Centers camera dX &rarr; 0 px</small></div>
+            </div>
+            <div style="display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;">
+              <button class="button primary compact" id="btn-husky-align" type="button"><i data-lucide="crosshair"></i>Align rail</button>
+              <button class="button secondary compact" id="btn-husky-stop-track" type="button"><i data-lucide="square"></i>Stop track</button>
+              <button class="button secondary compact" id="btn-husky-algo-tag" type="button">Tag</button>
+              <button class="button secondary compact" id="btn-husky-algo-obj" type="button">Object</button>
+            </div>
+          </div>
+
+          <div class="relay-card">
+            <div class="relay-card-top">
+              <div class="relay-card-name">Wireless live video<small>Same Wi-Fi browser / VLC</small></div>
+            </div>
+            <p id="husky-rtsp-url" style="margin:6px 0 10px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink-muted); word-break:break-all;">Set HuskyLens IP first</p>
+            <button class="button secondary block" id="btn-husky-open-web" type="button"><i data-lucide="video"></i>Open HuskyLens Live Feed</button>
+          </div>
+        </div>
+      </section>
+
+    </section>
+
+
+    <!-- ======================================================
+         VIEW: MANUAL CONTROL
+         ====================================================== -->
+    <section class="view" id="manual-view" aria-labelledby="manual-title">
+      <div class="view-intro">
+        <div>
+          <p class="eyebrow">Manual control</p>
+          <h2 id="manual-title">Rail and SCARA movement</h2>
+          <p>Command scales mirror the hardware setup. Joint totals are command estimates until firmware publishes position feedback.</p>
+        </div>
+        <div class="mode-switch">
+          <span>Control mode</span>
+          <div class="segmented">
+            <button class="selected" data-mode="manual" type="button">Manual</button>
+            <button data-mode="autonomous" type="button">Autonomous</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="manual-layout">
+        <!-- Axis Control -->
+        <article class="panel motion-panel">
+          <div class="panel-header">
+            <div><p class="eyebrow">Command control</p><h2>SCARA axes</h2></div>
+            <button class="chip" id="start-patrol" type="button">
+              <i data-lucide="radar"></i>Start auto patrol
+            </button>
+          </div>
+          <div class="axis-grid" id="axis-grid"></div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; padding:12px 16px; border-top:1px solid var(--glass-border);">
+            <input class="text-input" id="cloud-raw-cmd" placeholder="Type any Uno/Rail cmd (e.g. x5000, -z5000, 1, -1, h, sw)" style="flex:1; min-width:210px; margin:0;" />
+            <button class="button primary compact" id="btn-send-raw-cmd" type="button"><i data-lucide="send"></i>Send Command</button>
+            <button class="button secondary compact" id="btn-manual-preset-1" type="button">+500 (1)</button>
+            <button class="button secondary compact" id="btn-manual-preset-neg1" type="button">-500 (-1)</button>
+            <button class="button secondary compact" id="btn-manual-home" type="button"><i data-lucide="home"></i>Home (h)</button>
+          </div>
+          <div class="motion-footer">
+            <span><i data-lucide="radio"></i>Confirmed position from IR sensors only</span>
+            <span>Command history ≠ encoder feedback</span>
+          </div>
+        </article>
+
+        <!-- Recorder -->
+        <aside class="panel recorder-panel">
+          <div class="panel-header">
+            <div><p class="eyebrow">Routine recorder</p><h2>Capture movement</h2></div>
+            <span class="chip" id="recording-state">Not recording</span>
+          </div>
+          <label class="field-label" for="routine-name">Routine name</label>
+          <input class="text-input" id="routine-name" maxlength="40" value="New harvest routine" />
+          <div class="recorder-actions">
+            <button class="button primary" id="record-toggle" type="button">
+              <i data-lucide="circle"></i>Start recording
+            </button>
+            <button class="button secondary" id="clear-recording" type="button">Clear</button>
+          </div>
+          <div class="recorded-steps" id="recorded-steps">
+            <div class="empty-state compact">
+              <i data-lucide="mouse-pointer-click"></i>
+              <p>Movement steps appear here.</p>
+            </div>
+          </div>
+          <div style="padding: 12px 16px;">
+            <button class="button block secondary" id="save-routine" type="button" disabled>
+              <i data-lucide="save"></i>Save motion routine
+            </button>
+          </div>
+        </aside>
+      </div>
+
+      <!-- Pump & Relay Control -->
+      <article class="panel" style="margin-top: 16px;">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Direct relay & fluidics</p>
+            <h2>Hardware pump & solenoid control</h2>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="button secondary" id="btn-manual-test-relays" type="button">
+              <i data-lucide="activity"></i>Test relays (audit)
+            </button>
+            <button class="button secondary" id="btn-manual-toggle-polarity" type="button">
+              <i data-lucide="shuffle"></i>Polarity: <span id="manual-relay-polarity-badge">ACTIVE LOW</span>
+            </button>
+            <button class="button secondary" id="btn-manual-open-all" type="button">
+              <i data-lucide="droplets"></i>Open all valves
+            </button>
+            <button class="button secondary" id="btn-manual-all-off" type="button">
+              <i data-lucide="power-off"></i>All relays off
+            </button>
+          </div>
+        </div>
+
+        <div class="fluidics-grid">
+          <!-- Main Pump -->
+          <div class="relay-card pump-card">
+            <div class="relay-card-top">
+              <div class="relay-card-name">Main water pump<small>Pin D6 · Base ESP</small></div>
+              <span class="relay-status" id="manual-pump-status">IDLE</span>
+            </div>
+            <button class="button primary block" id="btn-manual-pump-toggle" type="button">
+              <i data-lucide="power"></i><span id="manual-pump-btn-text">Start Pump</span>
+            </button>
+          </div>
+
+          <!-- Unit 1 Left Valve -->
+          <div class="relay-card">
+            <div class="relay-card-top">
+              <div class="relay-card-name">Unit 1 Left valve<small>Pin D1 · Soil D7</small></div>
+              <span class="relay-status" id="manual-valve-unit1_left-status">CLOSED</span>
+            </div>
+            <button class="button secondary block valve-manual-toggle" data-tray="unit1_left" type="button">
+              <i data-lucide="droplet"></i>Toggle valve
+            </button>
+          </div>
+
+          <!-- Unit 2 Left Valve -->
+          <div class="relay-card">
+            <div class="relay-card-top">
+              <div class="relay-card-name">Unit 2 Left valve<small>Pin D2 · Soil D3</small></div>
+              <span class="relay-status" id="manual-valve-unit2_left-status">CLOSED</span>
+            </div>
+            <button class="button secondary block valve-manual-toggle" data-tray="unit2_left" type="button">
+              <i data-lucide="droplet"></i>Toggle valve
+            </button>
+          </div>
+
+          <!-- Unit 2 Right Valve -->
+          <div class="relay-card">
+            <div class="relay-card-top">
+              <div class="relay-card-name">Unit 2 Right valve<small>Pin D5 · Soil D4</small></div>
+              <span class="relay-status" id="manual-valve-unit2_right-status">CLOSED</span>
+            </div>
+            <button class="button secondary block valve-manual-toggle" data-tray="unit2_right" type="button">
+              <i data-lucide="droplet"></i>Toggle valve
+            </button>
+          </div>
+        </div>
+      </article>
+    </section>
+
+
+    <!-- ======================================================
+         VIEW: MOTION ROUTINES
+         ====================================================== -->
+    <section class="view" id="routines-view" aria-labelledby="routines-title">
+      <div class="view-intro">
+        <div>
+          <p class="eyebrow">Autonomous motion</p>
+          <h2 id="routines-title">Motion routines and jobs</h2>
+          <p>Routines capture your manual movements. Jobs attach a routine, crop, and destination tray for autonomous operation.</p>
+        </div>
+        <button class="button primary" id="new-job" type="button">
+          <i data-lucide="plus"></i>New task
+        </button>
+      </div>
+
+      <div class="routines-layout">
+        <!-- Routine Library -->
+        <article class="panel">
+          <div class="panel-header">
+            <div><p class="eyebrow">Saved movements</p><h2>Routine library</h2></div>
+            <span class="chip" id="routine-count">0 routines</span>
+          </div>
+          <div id="routine-library" class="routine-library"></div>
+        </article>
+
+        <!-- Job Builder -->
+        <aside class="panel job-builder">
+          <div class="panel-header">
+            <div><p class="eyebrow">Task builder</p><h2>Create robot task</h2></div>
+            <span class="chip success">Ready</span>
+          </div>
+
+          <label class="field-label" for="job-action">Robot action</label>
+          <select class="select-input" id="job-action">
+            <option value="Seed">Seed tray</option>
+            <option value="Inspect">Inspect canopy</option>
+            <option value="Harvest">Harvest crop</option>
+          </select>
+
+          <label class="field-label" for="job-tray">Destination tray</label>
+          <select class="select-input" id="job-tray">
+            <option value="unit1_left">Unit 1 — Left bay</option>
+            <option value="unit2_left">Unit 2 — Left bay</option>
+            <option value="unit2_right" selected>Unit 2 — Right bay</option>
+            <option value="unit1_right">Unit 1 — Home Station (Dock)</option>
+          </select>
+
+          <label class="field-label" for="job-crop">Seed crop</label>
+          <select class="select-input" id="job-crop">
+            <option value="Pak choi">Pak choi</option>
+            <option value="Lettuce">Lettuce</option>
+            <option value="Basil">Basil</option>
+            <option value="Microgreens">Microgreens</option>
+          </select>
+
+          <label class="field-label" for="job-routine">Motion routine</label>
+          <select class="select-input" id="job-routine"></select>
+
+          <div class="job-route">
+            <span class="route-point base">1</span>
+            <span>Base station</span>
+            <i data-lucide="arrow-right" style="width:14px;height:14px;flex-shrink:0;"></i>
+            <span class="route-point">2</span>
+            <span id="route-destination">Unit 2 — Right bay</span>
+          </div>
+
+          <button class="button primary block" id="queue-job" type="button">
+            <i data-lucide="send"></i>Queue robot task
+          </button>
+        </aside>
+      </div>
+    </section>
+
+
+    <!-- ======================================================
+         VIEW: GROW TRAYS
+         ====================================================== -->
+    <section class="view" id="trays-view" aria-labelledby="trays-title">
+      <div class="view-intro">
+        <div>
+          <p class="eyebrow">Growing areas</p>
+          <h2 id="trays-title">Tray monitoring and crop plans</h2>
+          <p>Cultivation bays have soil sensors (D7, D3, D4) and individual solenoid valves (D1, D2, D5). Unit 1 Right is the Home Station.</p>
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:flex-start;">
+          <button class="button primary" id="btn-tray-toggle-pump" type="button">
+            <i data-lucide="power"></i><span id="tray-pump-label">Start Main Pump</span>
+          </button>
+          <button class="button secondary" id="btn-test-relays" type="button" title="Cycle each valve and pump for 1.2s">
+            <i data-lucide="activity"></i>Test relays
+          </button>
+          <button class="button secondary" id="btn-toggle-polarity" type="button" title="Switch Active LOW / HIGH">
+            <i data-lucide="shuffle"></i>Polarity: <span id="relay-polarity-badge">ACTIVE LOW</span>
+          </button>
+          <button class="button secondary" id="run-all-valves" type="button">
+            <i data-lucide="droplets"></i>Open all valves
+          </button>
+          <button class="button secondary" id="btn-close-all-relays" type="button">
+            <i data-lucide="square"></i>Close all relays
+          </button>
+          <button class="button secondary" id="btn-calibrate-dry" type="button">
+            <i data-lucide="sliders"></i>Zero dry sensors
+          </button>
+        </div>
+      </div>
+      <section id="tray-cards" class="tray-card-grid"></section>
+    </section>
+
+
+    <!-- ======================================================
+         VIEW: ACTIVITY LOG
+         ====================================================== -->
+    <section class="view" id="activity-view" aria-labelledby="activity-title">
+      <div class="view-intro">
+        <div>
+          <p class="eyebrow">System records</p>
+          <h2 id="activity-title">Command activity log</h2>
+          <p>Every UI command creates one Firebase log record and one message for the responsible controller.</p>
+        </div>
+        <button class="button secondary" id="export-log" type="button">
+          <i data-lucide="download"></i>Export CSV
+        </button>
+      </div>
+      <section class="panel log-panel">
+        <div class="log-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Source</th>
+                <th>Event</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="activity-table"></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
+
+  </main>
+</div>
+
+<!-- ======================================================
+     MODALS
+     ====================================================== -->
+
+<!-- Task Modal -->
+<div class="modal-backdrop" id="task-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+    <div class="modal-header">
+      <div>
+        <p class="eyebrow">Autonomous task</p>
+        <h2 id="task-modal-title">Task queued</h2>
+      </div>
+      <button class="icon-button close-modal" type="button" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
+    <div id="task-modal-content" style="padding:16px 20px;"></div>
+    <div class="modal-actions">
+      <button class="button secondary close-modal" type="button">Close</button>
+      <button class="button primary" id="run-queued-task" type="button">
+        <i data-lucide="play"></i>Run now
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Connection Modal -->
+<div class="modal-backdrop" id="connection-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="connection-title">
+    <div class="modal-header">
+      <div>
+        <p class="eyebrow">Data bridge</p>
+        <h2 id="connection-title">Firebase connection</h2>
+      </div>
+      <button class="icon-button close-connection" type="button" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
+    <p class="modal-copy">The <strong>Arm ESP32</strong> connects directly to Wi-Fi &amp; Firebase RTDB (with captive portal fallback <strong>HydroHelp-Arm-Setup</strong> at <code>192.168.4.1</code>), reads <strong>HuskyLens 2</strong> wirelessly via Wi-Fi MQTT, and drives the <strong>Arduino Uno</strong> over Hardware UART2 (<code>TX2 GPIO 17 &rarr; Uno Pin 0 RX</code>).</p>
+    <code class="code-block">Arm ESP32 · Rail EN 25 · STEP 26 · DIR 27 · Limit 18<br>Arm ESP UART2 · TX2 GPIO 17 &rarr; Uno Pin 0 (RX) @ 115200 baud (+ GND)<br>HuskyLens 2 · Wi-Fi MQTT port 1883 · RTSP port 8554<br>Base ESP8266 · Soil D7, D3, D4 · Valves D1, D2, D5 · Pump D6 · DHT D0<br><br>/arm_config &nbsp;/vision_telemetry &nbsp;/robot_command<br>/farm_config &nbsp;/trays/{trayId} &nbsp;/activity</code>
+    <p class="modal-copy">Add <code style="font-family:monospace;font-size:12px;color:var(--primary);">firebase-config.js</code>, then deploy or open this dashboard over Firebase Hosting to monitor and control everything over the Internet.</p>
+    <div class="modal-actions">
+      <button class="button primary close-connection" type="button">Understood</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================================
+     TOAST REGION
+     ====================================================== -->
+<div class="toast-region" id="toast-region" aria-live="polite"></div>
+
+<!-- ======================================================
+     SCRIPTS
+     ====================================================== -->
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.11.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="firebase-live.js"></script>
+<script src="app.js"></script>
+<script>
+  // Initialize Lucide icons after DOM is fully ready
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.lucide) window.lucide.createIcons({ attrs: { width: 16, height: 16 } });
+  });
+</script>
+</body>
+</html>
