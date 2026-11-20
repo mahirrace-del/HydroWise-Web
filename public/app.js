@@ -450,8 +450,8 @@ function renderAxes() {
     </div>
   `).join("") + `
     <div class="axis-control tool-axis">
-      <div class="axis-top"><span class="axis-name">Tool / gripper <small>(Arduino Uno)</small></span><span class="axis-position"><b id="axis-gripper">${state.arm.gripper === 80 ? "Closed" : "Open"}</b></span></div>
-      <div class="tool-actions"><button class="button secondary" type="button" data-gripper="0">${icon("unlock-keyhole")} Open · G0</button><button class="button primary" type="button" data-gripper="80">${icon("lock-keyhole")} Close · G80</button></div>
+      <div class="axis-top"><span class="axis-name">360° Seeder Servo <small>(Uno Pin A0)</small></span><span class="axis-position"><b id="axis-gripper">${state.arm.gripper === 102 ? "Spinning (102)" : "Stopped (90)"}</b></span></div>
+      <div class="tool-actions"><button class="button secondary" type="button" data-gripper="90">${icon("square")} Stop · G90</button><button class="button primary" type="button" data-gripper="102">${icon("rotate-cw")} Slow Seed · G102</button></div>
     </div>
   `;
   refreshIcons();
@@ -738,14 +738,13 @@ function bindEvents() {
     const gripper = event.target.closest("[data-gripper]");
     if (gripper) {
       state.arm.gripper = Number(gripper.dataset.gripper);
-      document.getElementById("axis-gripper").textContent = state.arm.gripper === 80 ? "Closed" : "Open";
+      document.getElementById("axis-gripper").textContent = state.arm.gripper === 90 ? "Stopped (90)" : `Spinning (${state.arm.gripper})`;
       
       const gripperCmd = `G${state.arm.gripper}`;
       dispatchCloudCommand(gripperCmd, "JOG");
       
-      // UPDATED: Save raw gripper commands too
       if (state.recording) {
-        state.recordedSteps.push({ axis: "Tool / gripper", direction: 1, amount: state.arm.gripper, unit: state.arm.gripper === 80 ? "close" : "open", rawCommand: gripperCmd });
+        state.recordedSteps.push({ axis: "360° Seeder", direction: 1, amount: state.arm.gripper, unit: state.arm.gripper === 90 ? "stop" : "spin", rawCommand: gripperCmd });
         renderRecordedSteps();
       }
       showToast(`Sent ${gripperCmd} to Arduino Uno.`);
@@ -1030,8 +1029,9 @@ function bindEvents() {
     ["btn-teach-hopper", "G901", "RAW"],
     ["btn-teach-left", "G902", "RAW"],
     ["btn-teach-right", "G903", "RAW"],
-    ["btn-teach-close", "G904", "RAW"],
-    ["btn-teach-open", "G905", "RAW"],
+    ["btn-teach-close", "G907", "RAW"],
+    ["btn-teach-open", "G908", "RAW"],
+    ["btn-teach-pulse", "G916", "RAW"],
     ["btn-teach-demo", "DEMO", "ROUTINE"],
     ["btn-teach-stop", "STOP", "ROUTINE"]
   ];
