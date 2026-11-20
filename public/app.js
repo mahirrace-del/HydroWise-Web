@@ -439,6 +439,11 @@ async function writeSerial(command) {
 // --- RENDERING FUNCTIONS ---
 function renderAxes() {
   const grid = document.getElementById("axis-grid");
+  const getSeederPwm = () => {
+    const spd = Math.max(4, Math.min(90, Number(state.seederSpeed || 12)));
+    return state.seederInverted === false ? Math.min(180, 90 + spd) : Math.max(0, 90 - spd);
+  };
+  const pwmAngle = getSeederPwm();
   grid.innerHTML = axes.map((axis) => `
     <div class="axis-control ${axis.key === "rail" ? "rail-axis" : ""}">
       <div class="axis-top"><span class="axis-name">${axis.label} <small>(${axis.controller})</small></span><span class="axis-position"><b id="axis-${axis.key}">${formatNumber(state.arm[axis.key])}</b> <span class="axis-unit">${axis.unit}</span></span></div>
@@ -450,8 +455,16 @@ function renderAxes() {
     </div>
   `).join("") + `
     <div class="axis-control tool-axis">
-      <div class="axis-top"><span class="axis-name">360° Seeder Servo <small>(Uno Pin A0)</small></span><span class="axis-position"><b id="axis-gripper">${state.arm.gripper === 102 ? "Spinning (102)" : "Stopped (90)"}</b></span></div>
-      <div class="tool-actions"><button class="button secondary" type="button" data-gripper="90">${icon("square")} Stop · G90</button><button class="button primary" type="button" data-gripper="102">${icon("rotate-cw")} Slow Seed · G102</button></div>
+      <div class="axis-top"><span class="axis-name">360° Seeder Servo <small>(Uno Pin A0)</small></span><span class="axis-position"><b id="axis-gripper">${state.arm.gripper === 90 || state.arm.gripper === 0 ? "Stopped (90)" : `Spin (${state.arm.gripper})`}</b></span></div>
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+        <span style="font-size:11px; color:var(--ink-muted); white-space:nowrap;">Speed: <b id="seeder-speed-label">${state.seederSpeed || 12}</b> (PWM <b id="seeder-pwm-label">G${pwmAngle}</b>)</span>
+        <input id="seeder-speed-slider" type="range" min="4" max="90" value="${state.seederSpeed || 12}" style="flex:1;" aria-label="360 Seeder Speed" />
+        <button class="button secondary compact" id="btn-seeder-dir" type="button" title="Toggle rotation direction">${state.seederInverted === false ? "Fwd +" : "Rev -"}</button>
+      </div>
+      <div class="tool-actions">
+        <button class="button secondary" type="button" data-gripper="90">${icon("square")} Stop · G90</button>
+        <button class="button primary" id="btn-seeder-spin" type="button" data-gripper="${pwmAngle}">${icon("rotate-cw")} Spin · G${pwmAngle}</button>
+      </div>
     </div>
   `;
   refreshIcons();
@@ -731,7 +744,41 @@ function bindEvents() {
     button.addEventListener("click", () => setView(button.dataset.view || button.dataset.openView));
   });
   
+  document.getElementById("axis-grid").addEventListener("input", (event) => {
+    if (event.target.id === "seeder-speed-slider") {
+      state.seederSpeed = Number(event.target.value);
+      const pwm = state.seederInverted === false ? Math.min(180, 90 + state.seederSpeed) : Math.max(0, 90 - state.seederSpeed);
+      const spdEl = document.getElementById("seeder-speed-label");
+      const pwmEl = document.getElementById("seeder-pwm-label");
+      const spinBtn = document.getElementById("btn-seeder-spin");
+      if (spdEl) spdEl.textContent = String(state.seederSpeed);
+      if (pwmEl) pwmEl.textContent = `G${pwm}`;
+      if (spinBtn) {
+        spinBtn.dataset.gripper = String(pwm);
+        spinBtn.innerHTML = `${icon("rotate-cw")} Spin · G${pwm}`;
+        refreshIcons();
+      }
+    }
+  });
+
   document.getElementById("axis-grid").addEventListener("click", (event) => {
+    const dirBtn = event.target.closest("#btn-seeder-dir");
+    if (dirBtn) {
+      state.seederInverted = state.seederInverted === false;
+      const spd = Number(state.seederSpeed || 12);
+      const pwm = state.seederInverted === false ? Math.min(180, 90 + spd) : Math.max(0, 90 - spd);
+      dirBtn.textContent = state.seederInverted === false ? "Fwd +" : "Rev -";
+      const pwmEl = document.getElementById("seeder-pwm-label");
+      const spinBtn = document.getElementById("btn-seeder-spin");
+      if (pwmEl) pwmEl.textContent = `G${pwm}`;
+      if (spinBtn) {
+        spinBtn.dataset.gripper = String(pwm);
+        spinBtn.innerHTML = `${icon("rotate-cw")} Spin · G${pwm}`;
+        refreshIcons();
+      }
+      return;
+    }
+
     const button = event.target.closest("[data-axis]");
     if (button) moveAxis(button.dataset.axis, Number(button.dataset.direction));
     
@@ -1039,6 +1086,11 @@ function bindEvents() {
     const el = document.getElementById(id);
     if (el) el.addEventListener("click", () => sendArmButtonCommand(cmd, type));
   });
+
+  const armSpeedSelect = document.getElementById("arm-speed-select");
+  if (armSpeedSelect) {
+    armSpeedSelect.addEventListener("change", () => sendArmButtonCommand(armSpeedSelect.value, "RAW"));
+  }
 
   // HuskyLens 2 Wi-Fi MQTT & Stream controls
   const btnSetHuskyIp = document.getElementById("btn-set-husky-ip");

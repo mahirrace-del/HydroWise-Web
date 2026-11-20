@@ -331,6 +331,14 @@
             <button class="button secondary compact" id="btn-teach-close" type="button">Save Slow Spin</button>
             <button class="button secondary compact" id="btn-teach-open" type="button">Save Stop Trim</button>
             <button class="button secondary compact" id="btn-teach-pulse" type="button">Test Drop (1.2s)</button>
+            <select class="select-input" id="arm-speed-select" style="width:auto; min-width:130px; margin:0; padding:6px 10px;" aria-label="Arm stepper speed">
+              <option value="G921">Arm 1000 st/s</option>
+              <option value="G922">Arm 2000 st/s</option>
+              <option value="G923">Arm 3000 st/s</option>
+              <option value="G924" selected>Arm 4000 st/s</option>
+              <option value="G925">Arm 5000 st/s</option>
+              <option value="G926">Arm 6000 st/s</option>
+            </select>
             <button class="button primary compact" id="btn-teach-demo" type="button"><i data-lucide="repeat"></i>Start Loop</button>
             <button class="button danger compact" id="btn-teach-stop" type="button"><i data-lucide="square"></i>Stop</button>
           </div>
